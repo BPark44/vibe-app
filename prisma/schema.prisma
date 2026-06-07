@@ -1,0 +1,35 @@
+// Prisma is the single source of truth for the database schema.
+// We do NOT use the Prisma Client at runtime. Instead, the `prisma-kysely`
+// generator turns this schema into Kysely TypeScript types, and Kysely runs
+// the actual queries against the Supabase Postgres database.
+//
+//   - `prisma migrate dev`  -> evolve the schema / create SQL migrations
+//   - `prisma generate`     -> regenerate src/server/db/types.ts for Kysely
+
+generator kysely {
+  provider     = "prisma-kysely"
+  output       = "../src/server/db"
+  fileName     = "types.ts"
+  enumFileName = "enums.ts"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection used by the app at runtime (Supabase pooler, port 6543).
+  url       = env("DATABASE_URL")
+  // Direct connection used by Prisma for migrations (Supabase direct, port 5432).
+  directUrl = env("DIRECT_URL")
+}
+
+/// A public-schema mirror of a Supabase `auth.users` row.
+/// `id` matches the Supabase user id (uuid).
+model Profile {
+  id        String   @id @db.Uuid
+  email     String?
+  username  String?  @unique
+  bio       String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("profiles")
+}
