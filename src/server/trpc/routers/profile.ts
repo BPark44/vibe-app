@@ -16,6 +16,21 @@ const upsertProfileInput = z.object({
 });
 
 export const profileRouter = createTRPCRouter({
+  /**
+   * Idempotent bootstrap called after email confirmation.
+   * Creates a bare profile row (id + email) if one doesn't exist yet.
+   */
+  ensureExists: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.db
+      .insertInto("profiles")
+      .values({
+        id: ctx.user.id,
+        email: ctx.user.email ?? null,
+      })
+      .onConflict((oc) => oc.column("id").doNothing())
+      .execute();
+  }),
+
   /** The current user's profile row, or null if it doesn't exist yet. */
   me: protectedProcedure.query(async ({ ctx }) => {
     const profile = await ctx.db

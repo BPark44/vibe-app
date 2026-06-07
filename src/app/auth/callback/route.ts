@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createTRPCContext } from "@/server/trpc/context";
+import { createCaller } from "@/server/trpc/root";
 
 /**
  * OAuth / magic-link callback. Exchanges the `code` for a session and then
@@ -15,6 +17,14 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Ensure a profile row exists for the newly confirmed user.
+      try {
+        const ctx = await createTRPCContext({ headers: request.headers });
+        const caller = createCaller(ctx);
+        await caller.profile.ensureExists();
+      } catch {
+        // Non-fatal — the dashboard will handle missing profiles gracefully.
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

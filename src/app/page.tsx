@@ -1,3 +1,4 @@
+import { api } from "@/trpc/server";
 import Link from "next/link";
 
 const STACK = [
@@ -12,8 +13,7 @@ const STACK = [
 ];
 
 export default async function Home() {
-    // Server-side tRPC call (no HTTP round-trip) — fully type-safe.
-    // const profiles = await api.profile.list({ limit: 5 });
+    const profiles = await api.profile.list({ limit: 5 });
 
     return (
         <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-16">
@@ -48,6 +48,7 @@ export default async function Home() {
                 <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
                     The stack
                 </h2>
+
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {STACK.map((item) => (
                         <div
@@ -67,14 +68,15 @@ export default async function Home() {
                 <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
                     Recent profiles
                 </h2>
-                {/* {profiles.length === 0 ? (
+
+                {profiles && profiles.length === 0 ? (
                     <p className="mt-4 text-sm text-zinc-500">
                         No profiles yet. Sign in and create yours from the
                         dashboard.
                     </p>
                 ) : (
                     <ul className="mt-4 divide-y divide-black/5 rounded-xl border border-black/10 dark:divide-white/5 dark:border-white/10">
-                        {profiles.map((profile) => (
+                        {profiles?.map((profile) => (
                             <li
                                 key={profile.id}
                                 className="flex flex-col gap-0.5 p-4"
@@ -90,7 +92,7 @@ export default async function Home() {
                             </li>
                         ))}
                     </ul>
-                )} */}
+                )}
             </section>
         </main>
     );
