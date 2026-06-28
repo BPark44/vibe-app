@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Security Audit Report — vibe-app</title>
+  <style>
+    :root {
+      --bg: #f8f9fb;
+      --surface: #ffffff;
+      --border: #e2e6ed;
+      --text: #1a1d26;
+      --text-muted: #5c6370;
+      --critical: #b42318;
+      --critical-bg: #fef2f2;
+      --critical-border: #fecaca;
+      --high: #c2410c;
+      --high-bg: #fff7ed;
+      --high-border: #fed7aa;
+      --medium: #b45309;
+      --medium-bg: #fffbeb;
+      --medium-border: #fde68a;
+      --low: #0369a1;
+      --low-bg: #f0f9ff;
+      --low-border: #bae6fd;
+      --info: #4b5563;
+      --info-bg: #f3f4f6;
+      --info-border: #d1d5db;
+      --positive: #047857;
+      --positive-bg: #ecfdf5;
+      --positive-border: #a7f3d0;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem 2.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+    }
+
+    header .meta {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .executive {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .executive h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .executive p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .risk-badge {
+      display: inline-block;
+      margin-top: 0.75rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: var(--high-bg);
+      color: var(--high);
+      border: 1px solid var(--high-border);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.15rem;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-card .count {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .summary-card .label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-top: 0.25rem;
+    }
+
+    .summary-card.critical .count { color: var(--critical); }
+    .summary-card.critical { border-color: var(--critical-border); background: var(--critical-bg); }
+
+    .summary-card.high .count { color: var(--high); }
+    .summary-card.high { border-color: var(--high-border); background: var(--high-bg); }
+
+    .summary-card.medium .count { color: var(--medium); }
+    .summary-card.medium { border-color: var(--medium-border); background: var(--medium-bg); }
+
+    .summary-card.low .count { color: var(--low); }
+    .summary-card.low { border-color: var(--low-border); background: var(--low-bg); }
+
+    .summary-card.info .count { color: var(--info); }
+    .summary-card.info { border-color: var(--info-border); background: var(--info-bg); }
+
+    section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    section > h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 1.15rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: #fafbfc;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: #fafbfc;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .badge-critical { background: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical-border); }
+    .badge-high { background: var(--high-bg); color: var(--high); border: 1px solid var(--high-border); }
+    .badge-medium { background: var(--medium-bg); color: var(--medium); border: 1px solid var(--medium-border); }
+    .badge-low { background: var(--low-bg); color: var(--low); border: 1px solid var(--low-border); }
+    .badge-info { background: var(--info-bg); color: var(--info); border: 1px solid var(--info-border); }
+    .badge-positive { background: var(--positive-bg); color: var(--positive); border: 1px solid var(--positive-border); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    thead th {
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: #fafbfc;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: #fafbfc;
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      vertical-align: top;
+    }
+
+    td.location {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      max-width: 200px;
+      word-break: break-all;
+    }
+
+    td.finding {
+      font-weight: 500;
+    }
+
+    td.recommendation {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    .row-critical { background: var(--critical-bg); }
+    .row-critical:hover { background: #fee2e2; }
+    .row-high { background: var(--high-bg); }
+    .row-high:hover { background: #ffedd5; }
+    .row-medium { background: var(--medium-bg); }
+    .row-medium:hover { background: #fef3c7; }
+    .row-low { background: var(--low-bg); }
+    .row-low:hover { background: #e0f2fe; }
+    .row-info { background: var(--info-bg); }
+    .row-info:hover { background: #e5e7eb; }
+    .row-positive { background: var(--positive-bg); }
+    .row-positive:hover { background: #d1fae5; }
+
+    .deps-table td:first-child {
+      font-weight: 600;
+    }
+
+    .priority-table td:first-child {
+      font-weight: 700;
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.85rem;
+    }
+
+    .architecture {
+      padding: 1.5rem;
+      background: #fafbfc;
+      border-top: 1px solid var(--border);
+    }
+
+    .architecture pre {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      padding-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 1rem; }
+      header { padding: 1.5rem; }
+      table { font-size: 0.82rem; }
+      thead { display: none; }
+      tbody tr { display: block; margin-bottom: 0.5rem; border: 1px solid var(--border); border-radius: 8px; }
+      td { display: block; padding: 0.6rem 1rem; border: none; }
+      td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        margin-bottom: 0.2rem;
+      }
+      td.location { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Security Audit Report</h1>
+      <p class="meta">vibe-app &middot; Generated June 9, 2026 &middot; 6 parallel audit domains</p>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        Audits covered authentication, API layer, dependencies, input validation, infrastructure/config, and secrets/data exposure.
+      </p>
+      <span class="risk-badge">Overall Risk: Medium–High until RLS and redirect validation are fixed</span>
+    </header>
+
+    <div class="executive">
+      <h2>Executive Summary</h2>
+      <p>
+        The application has a <strong>sound application-layer auth model</strong> (Supabase SSR cookies, <code>getUser()</code> validation,
+        <code>protectedProcedure</code>, user-scoped queries). The main risks are <strong>defense-in-depth gaps</strong>:
+        missing Postgres RLS, privileged <code>DATABASE_URL</code> access, open redirects in auth flows, no security headers,
+        and dependency advisories clustered around <code>prisma-kysely</code>.
+      </p>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card critical">
+        <div class="count">1</div>
+        <div class="label">Critical</div>
+      </div>
+      <div class="summary-card high">
+        <div class="count">7</div>
+        <div class="label">High</div>
+      </div>
+      <div class="summary-card medium">
+        <div class="count">11</div>
+        <div class="label">Medium</div>
+      </div>
+      <div class="summary-card low">
+        <div class="count">5</div>
+        <div class="label">Low</div>
+      </div>
+      <div class="summary-card info">
+        <div class="count">6</div>
+        <div class="label">Info</div>
+      </div>
+    </div>
+
+    <section>
+      <h2>Critical &amp; High Findings</h2>
+      <div class="legend">
+        <span class="legend-item badge-critical">Critical</span>
+        <span class="legend-item badge-high">High</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 90px;">Severity</th>
+            <th style="width: 200px;">Location</th>
+            <th>Finding</th>
+            <th>Recommendation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-critical">
+            <td data-label="Severity"><span class="badge badge-critical">Critical</span></td>
+            <td class="location" data-label="Location">prisma/migrations/20260607061911_db_init/migration.sql:1-14</td>
+            <td class="finding" data-label="Finding"><code>profiles</code> table has no Row Level Security. With <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> exposed to the client, Supabase PostgREST may allow direct table access, bypassing tRPC auth.</td>
+            <td class="recommendation" data-label="Recommendation">Enable RLS on <code>profiles</code>; add policies scoped to <code>auth.uid()</code>. Restrict anon/authenticated roles.</td>
+          </tr>
+          <tr class="row-high">
+            <td data-label="Severity"><span class="badge badge-high">High</span></td>
+            <td class="location" data-label="Location">src/server/db/index.ts:10-27</td>
+            <td class="finding" data-label="Finding">Kysely uses <code>DATABASE_URL</code> (privileged Postgres role), bypassing RLS. All authorization is application-only.</td>
+            <td class="recommendation" data-label="Recommendation">Use least-privilege DB role, or user-scoped Supabase client with RLS. Keep app-layer checks as secondary.</td>
+          </tr>
+          <tr class="row-high">
+            <td data-label="Severity"><span class="badge badge-high">High</span></td>
+            <td class="location" data-label="Location">src/app/login/login-form.tsx:14,39</td>
+            <td class="finding" data-label="Finding"><strong>Open redirect:</strong> <code>redirectTo</code> from query string passed to <code>router.push()</code> without validation.</td>
+            <td class="recommendation" data-label="Recommendation">Allow only same-origin relative paths (<code>^/[a-zA-Z0-9/_-]*$</code>); reject <code>//</code>, <code>http:</code>, <code>@</code>. Default to <code>/dashboard</code>.</td>
+          </tr>
+          <tr class="row-high">
+            <td data-label="Severity"><span class="badge badge-high">High</span></td>
+            <td class="location" data-label="Location">src/app/auth/callback/route.ts:14,28</td>
+            <td class="finding" data-label="Finding"><strong>Open redirect:</strong> <code>next</code> concatenated as <code>${origin}${next}</code>. <code>@evil.com</code> tricks can redirect off-site.</td>
+            <td class="recommendation" data-label="Recommendation">Validate <code>next</code> as safe relative path; use <code>new URL(next, origin)</code> and verify <code>url.origin === origin</code>.</td>
+          </tr>
+          <tr class="row-high">
+            <td data-label="Severity"><span class="badge badge-high">High</span></td>
+            <td class="location" data-label="Location">src/app/api/trpc/[trpc]/route.ts:6-14</td>
+            <td class="finding" data-label="Finding">No rate limiting on tRPC endpoint. Public <code>profile.list</code> and mutations can be scraped or abused.</td>
+            <td class="recommendation" data-label="Recommendation">Add per-IP/user rate limits (Upstash, Vercel KV, edge middleware).</td>
+          </tr>
+          <tr class="row-high">
+            <td data-label="Severity"><span class="badge badge-high">High</span></td>
+            <td class="location" data-label="Location">next.config.ts:3-5</td>
+            <td class="finding" data-label="Finding">No security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy).</td>
+            <td class="recommendation" data-label="Recommendation">Add <code>headers()</code> in <code>next.config.ts</code> or platform config.</td>
+          </tr>
+          <tr class="row-high">
+            <td data-label="Severity"><span class="badge badge-high">High</span></td>
+            <td class="location" data-label="Location">package.json / pnpm-lock.yaml</td>
+            <td class="finding" data-label="Finding">3 High dev dependency advisories via <code>prisma-kysely@1.8.0</code> → <code>@prisma/internals@5.3.1</code> (<code>cross-spawn</code>, <code>lodash</code>, <code>tmp</code>).</td>
+            <td class="recommendation" data-label="Recommendation">Upgrade <code>prisma-kysely</code> to 3.x (aligned with Prisma 6), or add <code>pnpm.overrides</code>.</td>
+          </tr>
+          <tr class="row-high">
+            <td data-label="Severity"><span class="badge badge-high">High</span></td>
+            <td class="location" data-label="Location">pnpm-lock.yaml → postcss@8.4.31</td>
+            <td class="finding" data-label="Finding">Moderate XSS in CSS stringify (GHSA-qx2v-qp2m-jg93). Only prod-runtime advisory (<code>next@16.2.6</code> → <code>postcss</code>).</td>
+            <td class="recommendation" data-label="Recommendation">Override <code>postcss@&gt;=8.5.10</code> until Next bumps it; validate <code>next build</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Medium Findings</h2>
+      <div class="legend">
+        <span class="legend-item badge-medium">Medium</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 90px;">Severity</th>
+            <th style="width: 200px;">Location</th>
+            <th>Finding</th>
+            <th>Recommendation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">src/app/api/trpc/[trpc]/route.ts</td>
+            <td class="finding" data-label="Finding">Cookie-authenticated tRPC mutations lack CSRF protection.</td>
+            <td class="recommendation" data-label="Recommendation">Custom header on mutations, Origin/Referer checks, or <code>SameSite=Strict</code> where compatible.</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">src/app/auth/signout/route.ts:5-11</td>
+            <td class="finding" data-label="Finding">POST sign-out has no CSRF token.</td>
+            <td class="recommendation" data-label="Recommendation">CSRF token on form, or Origin check + SameSite cookies.</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">src/server/db/index.ts:12-15</td>
+            <td class="finding" data-label="Finding">No explicit DB TLS (<code>sslmode=require</code>).</td>
+            <td class="recommendation" data-label="Recommendation">Add <code>?sslmode=require</code> to connection string or <code>ssl: { rejectUnauthorized: true }</code> on Pool.</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">src/lib/supabase/*.ts, src/server/db/index.ts</td>
+            <td class="finding" data-label="Finding">No env validation at startup; <code>!</code> assertions hide misconfig until runtime.</td>
+            <td class="recommendation" data-label="Recommendation">Use <code>@t3-oss/env-nextjs</code> + Zod; fail fast at build/start.</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">src/server/trpc/trpc.ts + profile.ts:64-85</td>
+            <td class="finding" data-label="Finding">Error disclosure: unhandled DB constraint errors can leak Postgres internals to clients.</td>
+            <td class="recommendation" data-label="Recommendation">Catch <code>23505</code> (unique violation) → <code>CONFLICT</code>; sanitize <code>INTERNAL_SERVER_ERROR</code> in production.</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">src/server/trpc/routers/profile.ts:46-58</td>
+            <td class="finding" data-label="Finding">Public <code>profile.list</code> exposes up to 100 rows per request with no pagination or throttling.</td>
+            <td class="recommendation" data-label="Recommendation">Add cursor pagination, rate limits; confirm public enumeration is intended.</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">src/server/trpc/context.ts:18-23</td>
+            <td class="finding" data-label="Finding">Privileged <code>db</code> exposed to all procedures including <code>publicProcedure</code>.</td>
+            <td class="recommendation" data-label="Recommendation">Inject <code>db</code> only into protected middleware; lint against <code>publicProcedure</code> + <code>ctx.db</code>.</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">src/app/login/login-form.tsx:37,51</td>
+            <td class="finding" data-label="Finding">Raw Supabase error messages shown to users enables account enumeration.</td>
+            <td class="recommendation" data-label="Recommendation">Map to generic client messages; log details server-side only.</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">src/app/login/login-form.tsx:23-55</td>
+            <td class="finding" data-label="Finding">No rate limiting on sign-in/sign-up.</td>
+            <td class="recommendation" data-label="Recommendation">Supabase rate limits, CAPTCHA (Turnstile), lockout after failures.</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">prisma/schema.prisma + migration</td>
+            <td class="finding" data-label="Finding"><code>email</code> PII duplicated in <code>profiles</code> with no DB-level access controls.</td>
+            <td class="recommendation" data-label="Recommendation">Don't store email in <code>profiles</code>, or restrict via RLS to <code>auth.uid() = id</code>.</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">package.json (repo root)</td>
+            <td class="finding" data-label="Finding">No <code>pnpm audit</code> script, no CI, no Dependabot/Renovate.</td>
+            <td class="recommendation" data-label="Recommendation">Add audit script + CI gate; enable Dependabot.</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Severity"><span class="badge badge-medium">Medium</span></td>
+            <td class="location" data-label="Location">package.json:41</td>
+            <td class="finding" data-label="Finding"><code>prisma-kysely@1.8.0</code> pins Prisma 5.3.1 toolchain while app uses Prisma 6.19.3.</td>
+            <td class="recommendation" data-label="Recommendation">Upgrade to <code>prisma-kysely@3.x</code> or replace generator.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Low &amp; Info Findings</h2>
+      <div class="legend">
+        <span class="legend-item badge-low">Low</span>
+        <span class="legend-item badge-info">Info</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 90px;">Severity</th>
+            <th style="width: 200px;">Location</th>
+            <th>Finding</th>
+            <th>Recommendation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-low">
+            <td data-label="Severity"><span class="badge badge-low">Low</span></td>
+            <td class="location" data-label="Location">src/app/login/login-form.tsx:92</td>
+            <td class="finding" data-label="Finding">Password policy is client-only <code>minLength={6}</code>.</td>
+            <td class="recommendation" data-label="Recommendation">Enforce via Supabase Auth settings and server-side validation.</td>
+          </tr>
+          <tr class="row-low">
+            <td data-label="Severity"><span class="badge badge-low">Low</span></td>
+            <td class="location" data-label="Location">src/server/trpc/routers/profile.ts:9-15</td>
+            <td class="finding" data-label="Finding">Username lacks trim, NFKC normalization, reserved-name checks.</td>
+            <td class="recommendation" data-label="Recommendation">Add <code>.trim()</code>, NFKC normalization, block reserved names.</td>
+          </tr>
+          <tr class="row-low">
+            <td data-label="Severity"><span class="badge badge-low">Low</span></td>
+            <td class="location" data-label="Location">src/lib/supabase/middleware.ts:38-44</td>
+            <td class="finding" data-label="Finding">Only <code>/dashboard</code> guarded at edge; new routes need manual protection.</td>
+            <td class="recommendation" data-label="Recommendation">Extend middleware matcher or centralize route guards.</td>
+          </tr>
+          <tr class="row-low">
+            <td data-label="Severity"><span class="badge badge-low">Low</span></td>
+            <td class="location" data-label="Location">.gitignore</td>
+            <td class="finding" data-label="Finding">Missing patterns for <code>*.key</code>, <code>credentials.json</code>, <code>.supabase/</code>.</td>
+            <td class="recommendation" data-label="Recommendation">Add common secret file patterns.</td>
+          </tr>
+          <tr class="row-low">
+            <td data-label="Severity"><span class="badge badge-low">Low</span></td>
+            <td class="location" data-label="Location">package.json:14</td>
+            <td class="finding" data-label="Finding"><code>db:studio</code> can open against production DB if misconfigured.</td>
+            <td class="recommendation" data-label="Recommendation">Document dev-only usage; use read-only DB URL for prod debugging.</td>
+          </tr>
+          <tr class="row-info">
+            <td data-label="Severity"><span class="badge badge-info">Info</span></td>
+            <td class="location" data-label="Location">Codebase-wide</td>
+            <td class="finding" data-label="Finding">No hardcoded secrets in tracked source; <code>.env</code> gitignored.</td>
+            <td class="recommendation" data-label="Recommendation">Keep <code>.env*</code> ignored; scan CI for accidental secret commits.</td>
+          </tr>
+          <tr class="row-info">
+            <td data-label="Severity"><span class="badge badge-info">Info</span></td>
+            <td class="location" data-label="Location">Auth architecture</td>
+            <td class="finding" data-label="Finding">HTTP-only cookies via <code>@supabase/ssr</code>; no <code>localStorage</code> tokens.</td>
+            <td class="recommendation" data-label="Recommendation">Continue avoiding client-side storage for tokens.</td>
+          </tr>
+          <tr class="row-info">
+            <td data-label="Severity"><span class="badge badge-info">Info</span></td>
+            <td class="location" data-label="Location">Codebase-wide</td>
+            <td class="finding" data-label="Finding">No <code>eval()</code>, <code>innerHTML</code>, <code>dangerouslySetInnerHTML</code>.</td>
+            <td class="recommendation" data-label="Recommendation">Maintain this pattern; add ESLint rules to block them.</td>
+          </tr>
+          <tr class="row-info">
+            <td data-label="Severity"><span class="badge badge-info">Info</span></td>
+            <td class="location" data-label="Location">profile.ts</td>
+            <td class="finding" data-label="Finding">Kysely parameterized queries — low SQL injection risk.</td>
+            <td class="recommendation" data-label="Recommendation">Avoid raw SQL fragments from user input.</td>
+          </tr>
+          <tr class="row-info">
+            <td data-label="Severity"><span class="badge badge-info">Info</span></td>
+            <td class="location" data-label="Location">profile.ts</td>
+            <td class="finding" data-label="Finding">No IDOR in current procedures; mutations scoped to <code>ctx.user.id</code>.</td>
+            <td class="recommendation" data-label="Recommendation">Preserve this pattern for new endpoints.</td>
+          </tr>
+          <tr class="row-info">
+            <td data-label="Severity"><span class="badge badge-info">Info</span></td>
+            <td class="location" data-label="Location">Codebase-wide</td>
+            <td class="finding" data-label="Finding">No webhook endpoints; no server actions.</td>
+            <td class="recommendation" data-label="Recommendation">When adding webhooks, verify signatures and use idempotency.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>What's Working Well</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 120px;">Area</th>
+            <th>Practice</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-positive">
+            <td data-label="Area"><span class="badge badge-positive">Auth</span></td>
+            <td data-label="Practice"><code>getUser()</code> (server-validated JWT) instead of <code>getSession()</code></td>
+          </tr>
+          <tr class="row-positive">
+            <td data-label="Area"><span class="badge badge-positive">Auth</span></td>
+            <td data-label="Practice"><code>protectedProcedure</code> enforces auth and narrows <code>ctx.user</code></td>
+          </tr>
+          <tr class="row-positive">
+            <td data-label="Area"><span class="badge badge-positive">Auth</span></td>
+            <td data-label="Practice">Sign-out restricted to POST</td>
+          </tr>
+          <tr class="row-positive">
+            <td data-label="Area"><span class="badge badge-positive">API</span></td>
+            <td data-label="Practice">Zod input validation on mutating endpoints</td>
+          </tr>
+          <tr class="row-positive">
+            <td data-label="Area"><span class="badge badge-positive">API</span></td>
+            <td data-label="Practice"><code>server-only</code> on tRPC server caller</td>
+          </tr>
+          <tr class="row-positive">
+            <td data-label="Area"><span class="badge badge-positive">Data</span></td>
+            <td data-label="Practice"><code>profile.upsert</code> only writes <code>username</code>/<code>bio</code>; <code>id</code> from <code>ctx.user</code></td>
+          </tr>
+          <tr class="row-positive">
+            <td data-label="Area"><span class="badge badge-positive">Data</span></td>
+            <td data-label="Practice">Public <code>profile.list</code> omits <code>email</code></td>
+          </tr>
+          <tr class="row-positive">
+            <td data-label="Area"><span class="badge badge-positive">Infra</span></td>
+            <td data-label="Practice"><code>productionBrowserSourceMaps</code> not enabled (default false)</td>
+          </tr>
+          <tr class="row-positive">
+            <td data-label="Area"><span class="badge badge-positive">Infra</span></td>
+            <td data-label="Practice">No <code>SUPABASE_SERVICE_ROLE_KEY</code> in client or <code>.env.example</code></td>
+          </tr>
+          <tr class="row-positive">
+            <td data-label="Area"><span class="badge badge-positive">Deps</span></td>
+            <td data-label="Practice"><code>pnpm-lock.yaml</code> tracked with integrity hashes</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Dependency Audit Summary</h2>
+      <table class="deps-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Value</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-label="Metric">Total advisories</td>
+            <td data-label="Value">8 (3 High, 4 Moderate, 1 Low)</td>
+            <td data-label="Notes">From <code>pnpm audit</code></td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Metric">Production runtime</td>
+            <td data-label="Value">1 Moderate</td>
+            <td data-label="Notes"><code>postcss@8.4.31</code> via <code>next</code></td>
+          </tr>
+          <tr class="row-high">
+            <td data-label="Metric">Dev-only</td>
+            <td data-label="Value">7 advisories</td>
+            <td data-label="Notes">All via <code>prisma-kysely@1.8.0</code> → <code>@prisma/internals@5.3.1</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="architecture">
+        <strong>Remediation order:</strong>
+        <pre>1. Upgrade prisma-kysely to 3.x
+2. pnpm.overrides for postcss@>=8.5.10 (and interim patches if blocked)
+3. Add pnpm audit script + CI + Dependabot
+4. Tighten prod dependency ranges</pre>
+      </div>
+    </section>
+
+    <section>
+      <h2>Recommended Fix Priority</h2>
+      <table class="priority-table">
+        <thead>
+          <tr>
+            <th style="width: 70px;">Priority</th>
+            <th>Action</th>
+            <th style="width: 90px;">Effort</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-critical">
+            <td data-label="Priority">P0</td>
+            <td data-label="Action">Enable RLS on <code>profiles</code> + policies</td>
+            <td data-label="Effort">Medium</td>
+          </tr>
+          <tr class="row-critical">
+            <td data-label="Priority">P0</td>
+            <td data-label="Action">Validate <code>redirectTo</code> and <code>next</code> (open redirects)</td>
+            <td data-label="Effort">Low</td>
+          </tr>
+          <tr class="row-high">
+            <td data-label="Priority">P1</td>
+            <td data-label="Action">Security headers in <code>next.config.ts</code></td>
+            <td data-label="Effort">Low</td>
+          </tr>
+          <tr class="row-high">
+            <td data-label="Priority">P1</td>
+            <td data-label="Action">Upgrade <code>prisma-kysely</code> + postcss override</td>
+            <td data-label="Effort">Medium</td>
+          </tr>
+          <tr class="row-high">
+            <td data-label="Priority">P1</td>
+            <td data-label="Action">Rate limiting on <code>/api/trpc</code> and auth</td>
+            <td data-label="Effort">Medium</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Priority">P2</td>
+            <td data-label="Action">Env validation module</td>
+            <td data-label="Effort">Low</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Priority">P2</td>
+            <td data-label="Action">DB error sanitization + username conflict handling</td>
+            <td data-label="Effort">Low</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Priority">P2</td>
+            <td data-label="Action">CSRF on mutations/sign-out</td>
+            <td data-label="Effort">Medium</td>
+          </tr>
+          <tr class="row-medium">
+            <td data-label="Priority">P2</td>
+            <td data-label="Action">Explicit DB SSL + CI audit pipeline</td>
+            <td data-label="Effort">Low</td>
+          </tr>
+          <tr class="row-low">
+            <td data-label="Priority">P3</td>
+            <td data-label="Action">Username normalization, password policy, <code>.gitignore</code> hardening</td>
+            <td data-label="Effort">Low</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Architecture Risk Map</h2>
+      <div class="architecture">
+        <pre>Browser + anon key
+    │
+    ├── cookies ──► proxy.ts / session refresh
+    │                    │
+    │                    ▼
+    │               App Routes
+    │
+    ├── PostgREST (if RLS missing) ──► profiles table [NO RLS]
+    │
+    └── /api/trpc
+            │
+            ▼
+    createTRPCContext + getUser()
+            │
+            ▼
+    protectedProcedure?
+            │
+            ▼
+    Kysely via DATABASE_URL (privileged role)
+            │
+            ▼
+    profiles table [NO RLS]</pre>
+      </div>
+    </section>
+
+    <footer>
+      Generated by security audit &middot; vibe-app &middot; June 9, 2026
+    </footer>
+  </div>
+</body>
+</html>

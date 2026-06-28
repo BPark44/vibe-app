@@ -1,0 +1,64 @@
+---
+description: Server-side architecture conventions for models, controllers, and tRPC routers
+globs: src/server/**/*.ts
+alwaysApply: false
+---
+
+# Server Architecture
+
+Three-layer pattern: **Model → Controller → Router**. Types live in `src/server/types/<domain>/`.
+
+## Layer Responsibilities
+
+| Layer | Location | Role |
+|-------|----------|------|
+| Types | `src/server/types/<domain>/index.ts` | Zod schemas + inferred TS types, re-exports DB types |
+| Model | `src/server/models/<Domain>Model.ts` | Raw DB queries only, uses `db` singleton |
+| Controller | `src/server/controllers/<Domain>Controller.ts` | Business logic, calls model static methods |
+| Router | `src/server/trpc/routers/<domain>.ts` | Thin wire-up, calls controller with values from `ctx` |
+
+## Classes
+
+Both models and controllers are **abstract classes with public static methods**. No constructors, no instances.
+
+```ts
+// ✅ Model — uses db singleton, no ctx
+export abstract class ProfileModel {
+  public static async get(id: string): Promise<ProfileRow | null> {
+    return db.selectFrom("profiles").selectAll().where("id", "=", id).executeTakeFirst() ?? null;
+  }
+  public static async getMany(limit: number) { ... }
+  public static async create(data: { id: string; email: string | null }) { ... }
+  public static async upsert(data: ...) { ... }
+  public static async delete(id: string) { ... }
+}
+
+// ✅ Controller — calls model, takes explicit primitive args (not ctx)
+export abstract class ProfileController {
+  public static async getMe(userId: string) {
+    return ProfileModel.get(userId);
+  }
+  public static async upsert(userId: string, email: string | null, input: UpsertProfileInput) {
+    return ProfileModel.upsert({ id: userId, email, ...input });
+  }
+}
+
+// ✅ Router — one-liners, passes values from ctx explicitly
+export const profileRouter = createTRPCRouter({
+  me: protectedProcedure.query(({ ctx }) => ProfileController.getMe(ctx.user.id)),
+  upsert: protectedProcedure.input(upsertProfileInput).mutation(({ ctx, input }) =>
+    ProfileController.upsert(ctx.user.id, ctx.user.email ?? null, input)
+  ),
+});
+```
+
+## Every model must have
+
+`get`, `getMany`, `create`, `upsert`, `delete` as a baseline — add domain-specific methods on top.
+
+## Exports
+
+Each layer has a barrel `index.ts` that re-exports its classes:
+- `src/server/models/index.ts` → `export * from "./ProfileModel"`
+- `src/server/controllers/index.ts` → `export * from "./ProfileController"`
+- `src/server/types/index.ts` → `export * from "./<domain>/index"`

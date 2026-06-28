@@ -1,0 +1,76 @@
+---
+description: Frontend React conventions for components, types, and code style
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend Conventions
+
+## Component Location
+
+Components are **never** co-located with the route that uses them. They always live in `src/components/<category>/`.
+
+```
+✅  src/components/auth/LoginForm.tsx
+✅  src/components/profile/AvatarUpload.tsx
+✅  src/components/ui/Button.tsx
+
+❌  src/app/login/LoginForm.tsx
+❌  src/app/dashboard/ProfileCard.tsx
+```
+
+Category matches the domain: auth components → `auth/`, profile components → `profile/`, shared primitives → `ui/`.
+
+Each category folder has a barrel export:
+
+```ts
+// src/components/auth/index.ts
+export * from "./LoginForm";
+export * from "./SignupForm";
+```
+
+## Zod Type Files
+
+All Zod schema files are named `.z.ts` so they're immediately identifiable:
+
+```
+✅  src/server/types/profile/index.ts  →  re-exports from profile.z.ts
+✅  src/server/types/profile/profile.z.ts
+✅  src/types/post/post.z.ts
+
+❌  src/types/profileTypes.ts
+❌  src/types/profile/schema.ts
+```
+
+The barrel `index.ts` re-exports from the `.z.ts` file — consumers always import from the index, never directly from the `.z.ts`.
+
+## React Code Style
+
+Sibling code blocks inside a component are separated by a blank line:
+
+```tsx
+// ✅
+export function ProfileCard({ userId }: Props) {
+  const [open, setOpen] = useState(false);
+
+  const { data } = trpc.profile.me.useQuery();
+
+  function handleSave() {
+    setOpen(false);
+  }
+
+  return <div>{data?.username}</div>;
+}
+
+// ❌ — no blank lines between siblings
+export function ProfileCard({ userId }: Props) {
+  const [open, setOpen] = useState(false);
+  const { data } = trpc.profile.me.useQuery();
+  function handleSave() {
+    setOpen(false);
+  }
+  return <div>{data?.username}</div>;
+}
+```
+
+This applies to: hooks, derived values, event handlers, effects, and the return — each is its own visual block.
